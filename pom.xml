@@ -13,11 +13,11 @@
     </parent>
 
     <groupId>tn.esprit.spring</groupId>
-    <artifactId>autoLocationHamzaFhaiel</artifactId>
+    <artifactId>autoloc-api</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
-    <name>autoLocationHamzaFhaiel</name>
-    <description>autoLocationHamzaFhaiel</description>
+    <name>autoloc-api</name>
+    <description>autoloc-api</description>
 
     <properties>
         <java.version>17</java.version>
@@ -81,7 +81,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>tn.esprit.spring.AutoLocationHamzaFhaielApplication</mainClass>
+                    <mainClass>tn.esprit.spring.AutoLocationApplication</mainClass>
                 </configuration>
             </plugin>
 

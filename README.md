@@ -28,7 +28,7 @@ The domain package contains entities for `Agence`, `Client`, `Contrat`, `Employe
 
 ## Current implementation
 
-- `AutoLocationHamzaFhaielApplication` is the Spring Boot entry point.
+- `AutoLocationApplication` is the Spring Boot entry point.
 - `Vehicule` is mapped as a JPA entity.
 - `VehiculeRepository` extends `JpaRepository<Vehicule, Long>` and provides standard vehicle persistence operations.
 - `EmployeService` and `EmployeRepository` provide employee creation, lookup, listing, update, and deletion through the service layer.
@@ -51,7 +51,7 @@ Hibernate is configured with `spring.jpa.hibernate.ddl-auto=update`, so it creat
 
 1. Start the MySQL or MariaDB database server.
 2. Open the project in IntelliJ IDEA and load `pom.xml` as a Maven project.
-3. Run `tn.esprit.spring.AutoLocationHamzaFhaielApplication` from IntelliJ IDEA.
+3. Run `tn.esprit.spring.AutoLocationApplication` from IntelliJ IDEA.
 
 Alternatively, run the Maven Wrapper from the project root:
 
@@ -69,7 +69,7 @@ On Windows PowerShell:
 
 ```text
 src/main/java/tn/esprit/spring/
-├── AutoLocationHamzaFhaielApplication.java  # Spring Boot entry point
+├── AutoLocationApplication.java             # Spring Boot entry point
 ├── domain/                                  # JPA entities and enums
 ├── repository/                              # Spring Data repositories
 ├── service/                                 # Employee service logic

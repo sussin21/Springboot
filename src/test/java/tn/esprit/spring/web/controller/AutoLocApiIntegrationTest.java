@@ -1,0 +1,140 @@
+package tn.esprit.spring.web.controller;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+        "spring.datasource.url=jdbc:h2:mem:autoloc-test;DB_CLOSE_DELAY=-1",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "server.servlet.context-path="
+})
+class AutoLocApiIntegrationTest {
+
+    @LocalServerPort
+    private int port;
+
+    private final HttpClient httpClient = HttpClient.newHttpClient();
+
+    @Test
+    void swaggerAndCrudEndpointsAreAvailable() throws Exception {
+        HttpResponse<String> swaggerUi = send("GET", "/swagger-ui/index.html", null);
+        assertThat(swaggerUi.statusCode()).isEqualTo(200);
+
+        HttpResponse<String> openApi = send("GET", "/v3/api-docs", null);
+        assertThat(openApi.statusCode()).isEqualTo(200);
+        assertThat(openApi.body()).contains("/employes", "/vehicules", "/reservations");
+
+        assertThat(send("GET", "/", null).statusCode()).isEqualTo(200);
+        assertThat(send("GET", "/employes", null).statusCode()).isEqualTo(200);
+        assertThat(send("GET", "/employes/test", null).statusCode()).isEqualTo(200);
+
+        for (String path : new String[]{
+                "/agences/listall", "/clients/listall", "/contrats/listall",
+                "/employes/listall", "/equipements/listall", "/maintenances/listall",
+                "/paiements/listall", "/reservations/listall", "/vehicules/listall"
+        }) {
+            HttpResponse<String> response = send("GET", path, null);
+            assertThat(response.statusCode()).as(path).isEqualTo(200);
+            assertThat(response.body()).as(path).isEqualTo("[]");
+        }
+
+        HttpResponse<String> created = send("POST", "/employes",
+                "{\"idEmploye\":0,\"nom\":\"Hamza\",\"prenom\":\"Fhaiel\",\"role\":\"AGENT\"}");
+        assertThat(created.statusCode()).isEqualTo(201);
+        Matcher idMatcher = Pattern.compile("\"idEmploye\"\\s*:\\s*(\\d+)").matcher(created.body());
+        assertThat(idMatcher.find()).isTrue();
+        String id = idMatcher.group(1);
+
+        HttpResponse<String> updated = send("PUT", "/employes/" + id,
+                "{\"nom\":\"Hamza\",\"prenom\":\"Updated\",\"role\":\"MANAGER\"}");
+        assertThat(updated.statusCode()).isEqualTo(200);
+        assertThat(updated.body()).contains("Updated", "MANAGER");
+
+        HttpResponse<String> deleted = send("DELETE", "/employes/" + id, null);
+        assertThat(deleted.statusCode()).isEqualTo(204);
+
+        HttpResponse<String> missing = send("GET", "/employes/" + id, null);
+        assertThat(missing.statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void remainingEntitiesSupportCompleteCrudLifecycle() throws Exception {
+        String[][] cases = {
+                {"agences", "idAgence", "{\"nom\":\"Agence Test\",\"ville\":\"Tunis\",\"adresse\":\"Rue Test\",\"telephone\":\"12345678\"}", "Tunis", "Sousse"},
+                {"clients", "idClient", "{\"nom\":\"Client Test\",\"prenom\":\"Alice\",\"email\":\"alice@example.com\",\"telephone\":\"12345678\",\"numPermis\":\"TEST123\",\"dateInscription\":\"2026-10-01\"}", "Alice", "Bob"},
+                {"contrats", "idContrat", "{\"dateSignature\":\"2026-10-01\",\"montantTotal\":100.00,\"valide\":false}", "100.00", "250.00"},
+                {"equipements", "idEquipement", "{\"libelle\":\"GPS\"}", "GPS", "Siege enfant"},
+                {"maintenances", "idMaintenance", "{\"dateDebut\":\"2026-10-01\",\"dateFin\":\"2026-10-02\",\"description\":\"Vidange\"}", "Vidange", "Pneus"},
+                {"paiements", "idPaiement", "{\"montant\":100.00,\"datePaiement\":\"2026-10-01\",\"modePaiement\":\"CARTE\"}", "CARTE", "VIREMENT"},
+                {"reservations", "idReservation", "{\"dateDebut\":\"2026-10-01\",\"dateFin\":\"2026-10-02\",\"statut\":\"EN_ATTENTE\"}", "EN_ATTENTE", "CONFIRMEE"},
+                {"vehicules", "idVehicule", "{\"immatriculation\":\"TEST-123\",\"marque\":\"Renault\",\"modele\":\"Clio\",\"categorie\":\"CITADINE\",\"tarifJournalier\":50.00,\"statut\":\"DISPONIBLE\"}", "Clio", "Megane"}
+        };
+
+        for (String[] entry : cases) {
+            String path = "/" + entry[0];
+            String swaggerBody = "{\"" + entry[1] + "\":0," + entry[2].substring(1);
+            HttpResponse<String> created = send("POST", path, swaggerBody);
+            assertThat(created.statusCode()).as("create %s", path).isEqualTo(201);
+            Matcher idMatcher = Pattern.compile("\"" + entry[1] + "\"\\s*:\\s*(\\d+)").matcher(created.body());
+            assertThat(idMatcher.find()).as("generated ID for %s", path).isTrue();
+            String itemPath = path + "/" + idMatcher.group(1);
+
+            HttpResponse<String> fetched = send("GET", itemPath, null);
+            assertThat(fetched.statusCode()).as("read %s", path).isEqualTo(200);
+            assertThat(fetched.body()).contains(entry[3]);
+            assertThat(send("GET", path + "/listall", null).body()).contains(entry[3]);
+
+            HttpResponse<String> updated = send("PUT", itemPath, entry[2].replace(entry[3], entry[4]));
+            assertThat(updated.statusCode()).as("update %s", path).isEqualTo(200);
+            assertThat(updated.body()).contains(entry[4]);
+            assertThat(send("GET", itemPath, null).body()).contains(entry[4]);
+
+            assertThat(send("DELETE", itemPath, null).statusCode()).as("delete %s", path).isEqualTo(204);
+            assertThat(send("GET", itemPath, null).statusCode()).isEqualTo(404);
+            assertThat(send("PUT", itemPath, entry[2]).statusCode()).isEqualTo(404);
+            assertThat(send("DELETE", itemPath, null).statusCode()).isEqualTo(404);
+            assertThat(send("GET", path + "/listall", null).body()).isEqualTo("[]");
+        }
+    }
+
+    @Test
+    void malformedJsonReturnsBadRequest() throws Exception {
+        HttpResponse<String> response = send("POST", "/employes", "{");
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.body()).contains("error");
+    }
+
+    @Test
+    void generatedIdsAreReadOnlyInOpenApi() throws Exception {
+        HttpResponse<String> response = send("GET", "/v3/api-docs", null);
+        assertThat(response.statusCode()).isEqualTo(200);
+        for (String entity : new String[]{"Agence", "Client", "Contrat", "Employe", "Equipement", "Maintenance", "Paiement", "Reservation", "Vehicule"}) {
+            assertThat(response.body()).containsPattern("\"id" + entity + "\"\\s*:\\s*\\{[^}]*\"readOnly\"\\s*:\\s*true");
+        }
+    }
+
+    private HttpResponse<String> send(String method, String path, String body) throws Exception {
+        HttpRequest.Builder request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:" + port + path));
+        if (body == null) {
+            request.method(method, HttpRequest.BodyPublishers.noBody());
+        } else {
+            request.header("Content-Type", "application/json")
+                    .method(method, HttpRequest.BodyPublishers.ofString(body));
+        }
+        return httpClient.send(request.build(), HttpResponse.BodyHandlers.ofString());
+    }
+}

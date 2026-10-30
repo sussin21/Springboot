@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tn.esprit.spring.domain.Employe;
-import tn.esprit.spring.service.EmployeService;
+import tn.esprit.spring.service.IEmployee;
 
 import java.util.List;
 
@@ -22,9 +22,9 @@ import java.util.List;
 @Tag(name = "Employés", description = "Gestion des employés des agences")
 public class EmployeController {
 
-    private final EmployeService employeService;
+    private final IEmployee employeService;
 
-    public EmployeController(EmployeService employeService) {
+    public EmployeController(IEmployee employeService) {
         this.employeService = employeService;
     }
 
@@ -63,5 +63,12 @@ public class EmployeController {
     public ResponseEntity<Void> supprimer(@PathVariable long id) {
         employeService.supprimer(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{idEmploye}/agence/{idAgence}")
+    @Operation(summary = "Affecter un employé à une agence",
+            description = "Affecte ou réaffecte un employé existant à une agence existante. Aucun corps JSON requis.")
+    public Employe affecterAgenceEmploye(@PathVariable long idAgence, @PathVariable long idEmploye) {
+        return employeService.affecterAgenceEmploye(idAgence, idEmploye);
     }
 }

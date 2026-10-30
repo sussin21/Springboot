@@ -12,7 +12,7 @@ The project models the main concepts of a rental agency:
 - **Contracts and payments**: contract details and totals, payment dates, amounts, and methods.
 - **Maintenance and equipment**: vehicle maintenance records and equipment labels.
 
-The domain package contains entities for `Agence`, `Client`, `Contrat`, `Employe`, `Equipement`, `Maintenance`, `Paiement`, `Reservation`, and `Vehicule`. Enums represent vehicle categories and statuses, reservation status, employee roles, and payment methods. Entity relationships are planned for a later development stage.
+The domain package contains entities for `Agence`, `Client`, `Contrat`, `Employe`, `Equipement`, `Maintenance`, `Paiement`, `Reservation`, and `Vehicule`. Enums represent vehicle categories and statuses, reservation status, employee roles, and payment methods. Employees can be assigned to an agency through a many-to-one relationship. Other entity relationships are planned for a later development stage.
 
 ## Technologies
 
@@ -111,4 +111,17 @@ sql/
 
 ## Current scope
 
-The REST endpoints manage the entities and their fields. Entity relationships and related cascade/fetch behavior can be added as the corresponding JPA associations are introduced in the course.
+The REST endpoints manage the entities and their fields. Employees reference an agency through `@ManyToOne`; multiple employees may share an agency. Other entity relationships can be added as the corresponding JPA associations are introduced in the course.
+
+## Assign an employee to an agency
+
+`IEmployee` is the service interface (the contract). `EmployeService implements IEmployee` provides the implementation and receives both `EmployeRepository` and `AgenceRepository` through constructor injection. `EmployeController` depends on the interface.
+
+The method `Employe affecterAgenceEmploye(long idAgence, long idEmploye)` loads the two existing records, sets the employee's agency, saves the employee in a transaction, and returns it. Missing records return 404. Assigning again replaces the employee's previous agency. Agencies are not created or deleted by assigning or deleting an employee.
+
+1. POST `/agences` to create an agency and copy `idAgence` from the response.
+2. POST `/employes` to create an employee and copy `idEmploye`.
+3. PUT `/employes/{idEmploye}/agence/{idAgence}` with no request body.
+4. GET `/employes/{idEmploye}` to see the saved `agence` object.
+
+For example, `PUT http://localhost:8081/employes/5/agence/2` assigns employee 5 to agency 2. The assignment endpoint appears in Swagger under Employés. The `agence` field is read-only in employee JSON requests; use the assignment endpoint to change it. Existing employees may remain unassigned. Delete assigned employees before deleting their agency.

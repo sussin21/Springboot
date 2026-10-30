@@ -126,6 +126,60 @@ class AutoLocApiIntegrationTest {
         }
     }
 
+    @Test
+    void employeesCanBeAssignedAndReassignedToExistingAgencies() throws Exception {
+        String firstAgency = null;
+        String secondAgency = null;
+        String firstEmployee = null;
+        String secondEmployee = null;
+        try {
+            firstAgency = createId("/agences", "idAgence", "{\"nom\":\"Assignment Agency One\"}");
+            secondAgency = createId("/agences", "idAgence", "{\"nom\":\"Assignment Agency Two\"}");
+            firstEmployee = createId("/employes", "idEmploye", "{\"nom\":\"Assignment Employee One\",\"role\":\"AGENT\"}");
+            secondEmployee = createId("/employes", "idEmploye", "{\"nom\":\"Assignment Employee Two\",\"role\":\"AGENT\"}");
+
+            for (String employee : new String[]{firstEmployee, secondEmployee}) {
+                HttpResponse<String> assigned = send("PUT", "/employes/" + employee + "/agence/" + firstAgency, null);
+                assertThat(assigned.statusCode()).isEqualTo(200);
+                assertThat(assigned.body()).contains("Assignment Agency One");
+                assertThat(send("GET", "/employes/" + employee, null).body()).contains("Assignment Agency One");
+            }
+
+            HttpResponse<String> reassigned = send("PUT", "/employes/" + firstEmployee + "/agence/" + secondAgency, null);
+            assertThat(reassigned.statusCode()).isEqualTo(200);
+            assertThat(send("GET", "/employes/" + firstEmployee, null).body()).contains("Assignment Agency Two");
+            assertThat(send("GET", "/employes/" + secondEmployee, null).body()).contains("Assignment Agency One");
+
+            assertThat(send("PUT", "/employes/" + firstEmployee + "/agence/9223372036854775807", null).statusCode()).isEqualTo(404);
+            assertThat(send("PUT", "/employes/9223372036854775807/agence/" + firstAgency, null).statusCode()).isEqualTo(404);
+            assertThat(send("GET", "/employes/" + firstEmployee, null).body()).contains("Assignment Agency Two");
+
+            HttpResponse<String> edited = send("PUT", "/employes/" + firstEmployee,
+                    "{\"nom\":\"Edited Employee\",\"role\":\"MANAGER\"}");
+            assertThat(edited.statusCode()).isEqualTo(200);
+            assertThat(edited.body()).contains("Edited Employee", "Assignment Agency Two");
+            assertThat(send("GET", "/employes/listall", null).body()).contains("Assignment Agency One", "Assignment Agency Two");
+            assertThat(send("GET", "/v3/api-docs", null).body()).contains("/employes/{idEmploye}/agence/{idAgence}");
+
+            assertThat(send("DELETE", "/employes/" + firstEmployee, null).statusCode()).isEqualTo(204);
+            firstEmployee = null;
+            assertThat(send("GET", "/agences/" + secondAgency, null).statusCode()).isEqualTo(200);
+        } finally {
+            if (firstEmployee != null) send("DELETE", "/employes/" + firstEmployee, null);
+            if (secondEmployee != null) send("DELETE", "/employes/" + secondEmployee, null);
+            if (firstAgency != null) send("DELETE", "/agences/" + firstAgency, null);
+            if (secondAgency != null) send("DELETE", "/agences/" + secondAgency, null);
+        }
+    }
+
+    private String createId(String path, String idField, String body) throws Exception {
+        HttpResponse<String> response = send("POST", path, body);
+        assertThat(response.statusCode()).isEqualTo(201);
+        Matcher matcher = Pattern.compile("\"" + idField + "\"\\s*:\\s*(\\d+)").matcher(response.body());
+        assertThat(matcher.find()).isTrue();
+        return matcher.group(1);
+    }
+
     private HttpResponse<String> send(String method, String path, String body) throws Exception {
         HttpRequest.Builder request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:" + port + path));

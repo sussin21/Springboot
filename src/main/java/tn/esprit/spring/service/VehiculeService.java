@@ -2,8 +2,11 @@ package tn.esprit.spring.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import tn.esprit.spring.domain.Equipement;
 import tn.esprit.spring.domain.Vehicule;
 import tn.esprit.spring.repository.VehiculeRepository;
+import tn.esprit.spring.repository.EquipementRepository;
 
 import java.util.List;
 
@@ -11,9 +14,11 @@ import java.util.List;
 public class VehiculeService implements IVehicule {
 
     private final VehiculeRepository vehiculeRepository;
+    private final EquipementRepository equipementRepository;
 
-    public VehiculeService(VehiculeRepository vehiculeRepository) {
+    public VehiculeService(VehiculeRepository vehiculeRepository, EquipementRepository equipementRepository) {
         this.vehiculeRepository = vehiculeRepository;
+        this.equipementRepository = equipementRepository;
     }
 
     @Override
@@ -49,5 +54,19 @@ public class VehiculeService implements IVehicule {
     public void supprimer(long id) {
         obtenirParId(id);
         vehiculeRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public Vehicule affecterEquipementVehicule(long idV, long idEq) {
+        Vehicule vehicule = vehiculeRepository.findById(idV).orElse(null);
+        Equipement equipement = equipementRepository.findById(idEq).orElse(null);
+
+        if (vehicule == null || equipement == null) {
+            throw new EntityNotFoundException("Véhicule ou équipement introuvable");
+        }
+
+        vehicule.getEquipements().add(equipement);
+        return vehiculeRepository.save(vehicule);
     }
 }

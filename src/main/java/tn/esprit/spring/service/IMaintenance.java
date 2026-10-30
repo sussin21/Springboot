@@ -15,4 +15,6 @@ public interface IMaintenance {
     Maintenance modifier(long id, Maintenance maintenance);
 
     void supprimer(long id);
+
+    Maintenance affecterMaintenanceVehicule(long idM, long idV);
 }

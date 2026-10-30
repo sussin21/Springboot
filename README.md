@@ -12,7 +12,7 @@ The project models the main concepts of a rental agency:
 - **Contracts and payments**: contract details and totals, payment dates, amounts, and methods.
 - **Maintenance and equipment**: vehicle maintenance records and equipment labels.
 
-The domain package contains entities for `Agence`, `Client`, `Contrat`, `Employe`, `Equipement`, `Maintenance`, `Paiement`, `Reservation`, and `Vehicule`. Enums represent vehicle categories and statuses, reservation status, employee roles, and payment methods. Employees can be assigned to an agency through a many-to-one relationship. Other entity relationships are planned for a later development stage.
+The domain package contains entities for `Agence`, `Client`, `Contrat`, `Employe`, `Equipement`, `Maintenance`, `Paiement`, `Reservation`, and `Vehicule`. Enums represent vehicle categories and statuses, reservation status, employee roles, and payment methods. Employees reference an agency, maintenance records reference a vehicle, and vehicles can share equipment items. Other entity relationships are planned for a later development stage.
 
 ## Technologies
 
@@ -111,7 +111,7 @@ sql/
 
 ## Current scope
 
-The REST endpoints manage the entities and their fields. Employees reference an agency through `@ManyToOne`; multiple employees may share an agency. Other entity relationships can be added as the corresponding JPA associations are introduced in the course.
+The REST endpoints manage the entities and their fields. Employees reference an agency and maintenance records reference a vehicle through `@ManyToOne`. Vehicles reference equipment through `@ManyToMany`. Other entity relationships can be added as the corresponding JPA associations are introduced in the course.
 
 ## Assign an employee to an agency
 
@@ -130,3 +130,18 @@ For example, `PUT http://localhost:8081/employes/5/agence/2` assigns employee 5 
 Every domain service has an interface in `tn.esprit.spring.service`: `IAgence`, `IClient`, `IContrat`, `IEmployee`, `IEquipement`, `IMaintenance`, `IPaiement`, `IReservation`, and `IVehicule`. Each declares its CRUD methods; `IEmployee` also declares `affecterAgenceEmploye`.
 
 For example, `AgenceService implements IAgence` provides the method bodies, while `AgenceController` receives `IAgence` through its constructor. Spring injects the matching `@Service` implementation. The same structure is used for all nine resources. The repositories already are interfaces extending `JpaRepository`; entities remain concrete classes.
+
+## Assign equipment and maintenance to vehicles
+
+Both assignment methods use `findById(...).orElse(null)`, check for missing records (404), and save the relationship in a transaction. The records must already exist. Assignment fields are read-only in regular POST/PUT JSON; use the following endpoints without a request body:
+
+| Service method | Endpoint | Verify with GET |
+| --- | --- | --- |
+| `Vehicule affecterEquipementVehicule(long idV, long idEq)` in `IVehicule` / `VehiculeService` | `PUT /vehicules/{idV}/equipements/{idEq}` | `/vehicules/{idV}` → `equipements` |
+| `Maintenance affecterMaintenanceVehicule(long idM, long idV)` in `IMaintenance` / `MaintenanceService` | `PUT /maintenances/{idM}/vehicule/{idV}` | `/maintenances/{idM}` → `vehicule` |
+
+A vehicle can have several equipment items, and an equipment item can be used by several vehicles (`@ManyToMany`). Repeating the same equipment assignment does not create a duplicate. The join table is `vehicule_equipement`, with `id_vehicule` and `id_equipement` columns.
+
+Each maintenance record references one vehicle (`@ManyToOne`), and a vehicle can have several maintenance records. Assigning a maintenance record again changes its vehicle. Check the `maintenance.id_vehicule` column in phpMyAdmin to verify the saved link.
+
+Existing records can remain unassigned. Regular vehicle and maintenance edits preserve assignments. Deleting a vehicle does not delete its equipment, and deleting a maintenance record does not delete its vehicle. Delete maintenance records before their referenced vehicle, and remove linked vehicles before deleting equipment still in use.

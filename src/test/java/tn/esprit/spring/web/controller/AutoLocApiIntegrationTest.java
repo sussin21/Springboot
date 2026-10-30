@@ -172,6 +172,99 @@ class AutoLocApiIntegrationTest {
         }
     }
 
+    @Test
+    void vehicleEquipmentAssignmentsPersistWithoutDuplicatesOrCascadeDeletes() throws Exception {
+        String firstVehicle = null;
+        String secondVehicle = null;
+        String firstEquipment = null;
+        String secondEquipment = null;
+        try {
+            firstVehicle = createVehicle("EQUIP-V-1");
+            secondVehicle = createVehicle("EQUIP-V-2");
+            firstEquipment = createId("/equipements", "idEquipement", "{\"libelle\":\"Assignment GPS\"}");
+            secondEquipment = createId("/equipements", "idEquipement", "{\"libelle\":\"Assignment Seat\"}");
+
+            String assignment = "/vehicules/" + firstVehicle + "/equipements/" + firstEquipment;
+            assertThat(send("PUT", assignment, null).statusCode()).isEqualTo(200);
+            assertThat(send("PUT", assignment, null).statusCode()).isEqualTo(200);
+            assertThat(send("PUT", "/vehicules/" + firstVehicle + "/equipements/" + secondEquipment, null).statusCode()).isEqualTo(200);
+            assertThat(send("PUT", "/vehicules/" + secondVehicle + "/equipements/" + firstEquipment, null).statusCode()).isEqualTo(200);
+
+            HttpResponse<String> saved = send("GET", "/vehicules/" + firstVehicle, null);
+            assertThat(saved.statusCode()).isEqualTo(200);
+            assertThat(saved.body()).contains("Assignment GPS", "Assignment Seat");
+            assertThat(Pattern.compile("\"idEquipement\"\\s*:\\s*" + firstEquipment + "\\b")
+                    .matcher(saved.body()).results().count()).isEqualTo(1);
+            assertThat(send("GET", "/vehicules/" + secondVehicle, null).body()).contains("Assignment GPS");
+
+            assertThat(send("PUT", "/vehicules/" + firstVehicle + "/equipements/9223372036854775807", null).statusCode()).isEqualTo(404);
+            assertThat(send("PUT", "/vehicules/9223372036854775807/equipements/" + firstEquipment, null).statusCode()).isEqualTo(404);
+            HttpResponse<String> edited = send("PUT", "/vehicules/" + firstVehicle, vehicleBody("EQUIP-V-1"));
+            assertThat(edited.statusCode()).isEqualTo(200);
+            assertThat(edited.body()).contains("Assignment GPS", "Assignment Seat");
+            assertThat(send("GET", "/vehicules/listall", null).body()).contains("Assignment GPS");
+            assertThat(send("GET", "/v3/api-docs", null).body()).contains("/vehicules/{idV}/equipements/{idEq}");
+
+            assertThat(send("DELETE", "/vehicules/" + firstVehicle, null).statusCode()).isEqualTo(204);
+            firstVehicle = null;
+            assertThat(send("GET", "/equipements/" + firstEquipment, null).statusCode()).isEqualTo(200);
+            assertThat(send("GET", "/vehicules/" + secondVehicle, null).body()).contains("Assignment GPS");
+        } finally {
+            if (firstVehicle != null) send("DELETE", "/vehicules/" + firstVehicle, null);
+            if (secondVehicle != null) send("DELETE", "/vehicules/" + secondVehicle, null);
+            if (firstEquipment != null) send("DELETE", "/equipements/" + firstEquipment, null);
+            if (secondEquipment != null) send("DELETE", "/equipements/" + secondEquipment, null);
+        }
+    }
+
+    @Test
+    void maintenanceCanBeAssignedAndReassignedWithoutChangingTheVehicle() throws Exception {
+        String firstVehicle = null;
+        String secondVehicle = null;
+        String firstMaintenance = null;
+        String secondMaintenance = null;
+        try {
+            firstVehicle = createVehicle("MAINT-V-1");
+            secondVehicle = createVehicle("MAINT-V-2");
+            firstMaintenance = createId("/maintenances", "idMaintenance", "{\"description\":\"Assignment Oil\"}");
+            secondMaintenance = createId("/maintenances", "idMaintenance", "{\"description\":\"Assignment Tires\"}");
+
+            for (String maintenance : new String[]{firstMaintenance, secondMaintenance}) {
+                assertThat(send("PUT", "/maintenances/" + maintenance + "/vehicule/" + firstVehicle, null).statusCode()).isEqualTo(200);
+                assertThat(send("GET", "/maintenances/" + maintenance, null).body()).contains("MAINT-V-1");
+            }
+            assertThat(send("PUT", "/maintenances/" + firstMaintenance + "/vehicule/" + secondVehicle, null).statusCode()).isEqualTo(200);
+            assertThat(send("GET", "/maintenances/" + firstMaintenance, null).body()).contains("MAINT-V-2");
+            assertThat(send("GET", "/maintenances/" + secondMaintenance, null).body()).contains("MAINT-V-1");
+
+            assertThat(send("PUT", "/maintenances/" + firstMaintenance + "/vehicule/9223372036854775807", null).statusCode()).isEqualTo(404);
+            assertThat(send("PUT", "/maintenances/9223372036854775807/vehicule/" + firstVehicle, null).statusCode()).isEqualTo(404);
+            HttpResponse<String> edited = send("PUT", "/maintenances/" + firstMaintenance, "{\"description\":\"Updated Maintenance\"}");
+            assertThat(edited.statusCode()).isEqualTo(200);
+            assertThat(edited.body()).contains("Updated Maintenance", "MAINT-V-2");
+            assertThat(send("GET", "/maintenances/listall", null).body()).contains("MAINT-V-1", "MAINT-V-2");
+            assertThat(send("GET", "/v3/api-docs", null).body()).contains("/maintenances/{idM}/vehicule/{idV}");
+
+            assertThat(send("DELETE", "/maintenances/" + firstMaintenance, null).statusCode()).isEqualTo(204);
+            firstMaintenance = null;
+            assertThat(send("GET", "/vehicules/" + secondVehicle, null).statusCode()).isEqualTo(200);
+        } finally {
+            if (firstMaintenance != null) send("DELETE", "/maintenances/" + firstMaintenance, null);
+            if (secondMaintenance != null) send("DELETE", "/maintenances/" + secondMaintenance, null);
+            if (firstVehicle != null) send("DELETE", "/vehicules/" + firstVehicle, null);
+            if (secondVehicle != null) send("DELETE", "/vehicules/" + secondVehicle, null);
+        }
+    }
+
+    private String vehicleBody(String registration) {
+        return "{\"immatriculation\":\"" + registration + "\",\"marque\":\"Renault\",\"modele\":\"Clio\","
+                + "\"categorie\":\"CITADINE\",\"tarifJournalier\":50.00,\"statut\":\"DISPONIBLE\"}";
+    }
+
+    private String createVehicle(String registration) throws Exception {
+        return createId("/vehicules", "idVehicule", vehicleBody(registration));
+    }
+
     private String createId(String path, String idField, String body) throws Exception {
         HttpResponse<String> response = send("POST", path, body);
         assertThat(response.statusCode()).isEqualTo(201);

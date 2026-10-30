@@ -58,4 +58,11 @@ public class VehiculeController {
         vehiculeService.supprimer(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{idV}/equipements/{idEq}")
+    @Operation(summary = "Affecter un équipement à un véhicule",
+            description = "Ajoute un équipement existant au véhicule. Une affectation répétée ne crée pas de doublon. Aucun corps JSON requis.")
+    public Vehicule affecterEquipementVehicule(@PathVariable long idV, @PathVariable long idEq) {
+        return vehiculeService.affecterEquipementVehicule(idV, idEq);
+    }
 }

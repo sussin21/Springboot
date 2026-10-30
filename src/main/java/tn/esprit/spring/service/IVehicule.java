@@ -15,4 +15,6 @@ public interface IVehicule {
     Vehicule modifier(long id, Vehicule vehicule);
 
     void supprimer(long id);
+
+    Vehicule affecterEquipementVehicule(long idV, long idEq);
 }

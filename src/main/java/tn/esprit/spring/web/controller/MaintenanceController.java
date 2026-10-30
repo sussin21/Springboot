@@ -58,4 +58,11 @@ public class MaintenanceController {
         maintenanceService.supprimer(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{idM}/vehicule/{idV}")
+    @Operation(summary = "Affecter une maintenance à un véhicule",
+            description = "Affecte ou réaffecte une maintenance existante à un véhicule existant. Aucun corps JSON requis.")
+    public Maintenance affecterMaintenanceVehicule(@PathVariable long idM, @PathVariable long idV) {
+        return maintenanceService.affecterMaintenanceVehicule(idM, idV);
+    }
 }

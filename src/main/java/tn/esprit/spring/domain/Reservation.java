@@ -7,6 +7,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -30,6 +33,10 @@ public class Reservation {
 
     @Enumerated(EnumType.STRING)
     private StatutReservation statut;
+
+    @OneToOne(cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "id_contrat", unique = true)
+    private Contrat contrat;
 
     public Reservation(Long idReservation, LocalDate dateDebut, LocalDate dateFin, StatutReservation statut) {
         this.idReservation = idReservation;

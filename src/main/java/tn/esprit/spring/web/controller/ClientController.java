@@ -34,6 +34,13 @@ public class ClientController {
         return ResponseEntity.status(HttpStatus.CREATED).body(clientService.creer(client));
     }
 
+    @PostMapping("/avec-reservations")
+    @Operation(summary = "Créer un client avec ses réservations",
+            description = "Crée un nouveau client et ses nouvelles réservations dans une seule transaction.")
+    public ResponseEntity<Client> ajouterReservationClient(@RequestBody Client c) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(clientService.ajouterReservationClient(c));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Chercher un client par identifiant")
     public Client obtenirParId(@PathVariable long id) {

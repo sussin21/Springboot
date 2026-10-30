@@ -15,4 +15,6 @@ public interface IReservation {
     Reservation modifier(long id, Reservation reservation);
 
     void supprimer(long id);
+
+    Reservation ajouterReservationContrat(Reservation r);
 }

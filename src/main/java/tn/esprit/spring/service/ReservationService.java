@@ -2,6 +2,7 @@ package tn.esprit.spring.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.spring.domain.Reservation;
 import tn.esprit.spring.repository.ReservationRepository;
 
@@ -46,5 +47,17 @@ public class ReservationService implements IReservation {
     public void supprimer(long id) {
         obtenirParId(id);
         reservationRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public Reservation ajouterReservationContrat(Reservation r) {
+        if (r == null || r.getContrat() == null) {
+            throw new IllegalArgumentException("La réservation doit contenir un nouveau contrat.");
+        }
+
+        r.setIdReservation(null);
+        r.getContrat().setIdContrat(null);
+        return reservationRepository.save(r);
     }
 }

@@ -15,4 +15,6 @@ public interface IClient {
     Client modifier(long id, Client client);
 
     void supprimer(long id);
+
+    Client ajouterReservationClient(Client c);
 }

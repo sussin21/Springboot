@@ -12,7 +12,7 @@ The project models the main concepts of a rental agency:
 - **Contracts and payments**: contract details and totals, payment dates, amounts, and methods.
 - **Maintenance and equipment**: vehicle maintenance records and equipment labels.
 
-The domain package contains entities for `Agence`, `Client`, `Contrat`, `Employe`, `Equipement`, `Maintenance`, `Paiement`, `Reservation`, and `Vehicule`. Enums represent vehicle categories and statuses, reservation status, employee roles, and payment methods. Employees reference an agency, maintenance records reference a vehicle, and vehicles can share equipment items. Other entity relationships are planned for a later development stage.
+The domain package contains entities for `Agence`, `Client`, `Contrat`, `Employe`, `Equipement`, `Maintenance`, `Paiement`, `Reservation`, and `Vehicule`. Enums represent vehicle categories and statuses, reservation status, employee roles, and payment methods. Employees reference an agency, maintenance records reference a vehicle, vehicles can share equipment items, clients have reservations, and a reservation can have a contract.
 
 ## Technologies
 
@@ -111,7 +111,7 @@ sql/
 
 ## Current scope
 
-The REST endpoints manage the entities and their fields. Employees reference an agency and maintenance records reference a vehicle through `@ManyToOne`. Vehicles reference equipment through `@ManyToMany`. Other entity relationships can be added as the corresponding JPA associations are introduced in the course.
+The REST endpoints manage the entities and their fields. Employees reference an agency and maintenance records reference a vehicle through `@ManyToOne`. Vehicles reference equipment through `@ManyToMany`. Clients own a list of reservations through `@OneToMany`, and reservations can reference a contract through `@OneToOne`.
 
 ## Assign an employee to an agency
 
@@ -145,3 +145,25 @@ A vehicle can have several equipment items, and an equipment item can be used by
 Each maintenance record references one vehicle (`@ManyToOne`), and a vehicle can have several maintenance records. Assigning a maintenance record again changes its vehicle. Check the `maintenance.id_vehicule` column in phpMyAdmin to verify the saved link.
 
 Existing records can remain unassigned. Regular vehicle and maintenance edits preserve assignments. Deleting a vehicle does not delete its equipment, and deleting a maintenance record does not delete its vehicle. Delete maintenance records before their referenced vehicle, and remove linked vehicles before deleting equipment still in use.
+
+## Create a client with reservations or a reservation with a contract
+
+`Client ajouterReservationClient(Client c)` is declared in `IClient` and implemented in `ClientService`. POST `/clients/avec-reservations` creates a new client and at least one new reservation in a single transaction. Pass the reservation objects in the `reservations` JSON array. A reservation may also include a new `contrat` object.
+
+`Reservation ajouterReservationContrat(Reservation r)` is declared in `IReservation` and implemented in `ReservationService`. POST `/reservations/avec-contrat` creates a new reservation and its required new contract in a single transaction. Pass the contract fields inside the `contrat` JSON object.
+
+Both endpoints return 201 and generate fresh IDs, even if the input contains IDs. They create new records; they do not attach existing records by ID. Missing required nested objects return 400 without saving the request. Hibernate persists new linked objects through `cascade = CascadeType.PERSIST`.
+
+Client example:
+
+```json
+{"nom":"Client Test","reservations":[{"dateDebut":"2026-11-01","dateFin":"2026-11-03","statut":"EN_ATTENTE"}]}
+```
+
+Reservation example:
+
+```json
+{"dateDebut":"2026-11-01","dateFin":"2026-11-03","statut":"CONFIRMEE","contrat":{"dateSignature":"2026-10-30","montantTotal":150.00,"valide":true}}
+```
+
+Read back the results with GET `/clients/{id}` (`reservations`) or GET `/reservations/{id}` (`contrat`). In phpMyAdmin, `reservation.id_client` stores the client link and `reservation.id_contrat` stores the unique contract link. Ordinary client/reservation edits preserve these links. Cascade PERSIST only creates records: deleting a client retains its reservations, and deleting a reservation retains its contract. For cleanup, delete the client, then its reservations, then the contracts.

@@ -256,6 +256,117 @@ class AutoLocApiIntegrationTest {
         }
     }
 
+    @Test
+    void clientAndNewReservationsAreCreatedTogether() throws Exception {
+        String clientId = null;
+        String[] reservationIds = {};
+        String[] contractIds = {};
+        try {
+            clientId = createId("/clients/avec-reservations", "idClient", """
+                    {
+                      "idClient": 0,
+                      "nom": "Cascade Client",
+                      "prenom": "Test",
+                      "reservations": [
+                        {
+                          "idReservation": 0,
+                          "dateDebut": "2026-11-01",
+                          "dateFin": "2026-11-03",
+                          "statut": "CONFIRMEE",
+                          "contrat": {"idContrat": 0, "montantTotal": 199.99, "valide": false}
+                        },
+                        {"idReservation": 0, "dateDebut": "2026-12-01", "statut": "EN_ATTENTE"}
+                      ]
+                    }
+                    """);
+            HttpResponse<String> saved = send("GET", "/clients/" + clientId, null);
+            assertThat(saved.statusCode()).isEqualTo(200);
+            reservationIds = ids(saved.body(), "idReservation");
+            contractIds = ids(saved.body(), "idContrat");
+            assertThat(reservationIds).hasSize(2).doesNotContain("0");
+            assertThat(contractIds).hasSize(1).doesNotContain("0");
+            assertThat(saved.body()).contains("2026-11-01", "2026-12-01", "199.99");
+            for (String id : reservationIds) {
+                assertThat(send("GET", "/reservations/" + id, null).statusCode()).isEqualTo(200);
+            }
+            assertThat(send("GET", "/contrats/" + contractIds[0], null).statusCode()).isEqualTo(200);
+
+            HttpResponse<String> edited = send("PUT", "/clients/" + clientId, "{\"nom\":\"Edited Cascade Client\"}");
+            assertThat(edited.statusCode()).isEqualTo(200);
+            assertThat(ids(edited.body(), "idReservation")).containsExactly(reservationIds);
+            assertThat(send("GET", "/clients/listall", null).body()).contains("Edited Cascade Client", "199.99");
+            assertThat(send("GET", "/v3/api-docs", null).body()).contains("/clients/avec-reservations");
+
+            assertThat(send("DELETE", "/clients/" + clientId, null).statusCode()).isEqualTo(204);
+            clientId = null;
+            assertThat(send("GET", "/reservations/" + reservationIds[0], null).statusCode()).isEqualTo(200);
+        } finally {
+            if (clientId != null) send("DELETE", "/clients/" + clientId, null);
+            for (String id : reservationIds) send("DELETE", "/reservations/" + id, null);
+            for (String id : contractIds) send("DELETE", "/contrats/" + id, null);
+        }
+    }
+
+    @Test
+    void reservationAndNewContractAreCreatedTogether() throws Exception {
+        String reservationId = null;
+        String contractId = null;
+        try {
+            reservationId = createId("/reservations/avec-contrat", "idReservation", """
+                    {
+                      "idReservation": 0,
+                      "dateDebut": "2026-11-04",
+                      "dateFin": "2026-11-06",
+                      "statut": "CONFIRMEE",
+                      "contrat": {
+                        "idContrat": 0,
+                        "dateSignature": "2026-10-30",
+                        "montantTotal": 250.00,
+                        "valide": true
+                      }
+                    }
+                    """);
+            HttpResponse<String> saved = send("GET", "/reservations/" + reservationId, null);
+            assertThat(saved.statusCode()).isEqualTo(200);
+            String[] contractIds = ids(saved.body(), "idContrat");
+            assertThat(contractIds).hasSize(1).doesNotContain("0");
+            contractId = contractIds[0];
+            assertThat(saved.body()).contains("2026-10-30", "250.00");
+            assertThat(send("GET", "/contrats/" + contractId, null).statusCode()).isEqualTo(200);
+
+            HttpResponse<String> edited = send("PUT", "/reservations/" + reservationId,
+                    "{\"dateDebut\":\"2026-11-05\",\"statut\":\"CONFIRMEE\"}");
+            assertThat(edited.statusCode()).isEqualTo(200);
+            assertThat(ids(edited.body(), "idContrat")).containsExactly(contractId);
+            assertThat(send("GET", "/v3/api-docs", null).body()).contains("/reservations/avec-contrat");
+
+            assertThat(send("DELETE", "/reservations/" + reservationId, null).statusCode()).isEqualTo(204);
+            reservationId = null;
+            assertThat(send("GET", "/contrats/" + contractId, null).statusCode()).isEqualTo(200);
+        } finally {
+            if (reservationId != null) send("DELETE", "/reservations/" + reservationId, null);
+            if (contractId != null) send("DELETE", "/contrats/" + contractId, null);
+        }
+    }
+
+    @Test
+    void missingNestedObjectsReturnBadRequestWithoutCreatingRecords() throws Exception {
+        for (String body : new String[]{"{}", "{\"reservations\":[]}", "{\"reservations\":[{},null]}"}) {
+            HttpResponse<String> response = send("POST", "/clients/avec-reservations", body);
+            assertThat(response.statusCode()).isEqualTo(400);
+            assertThat(response.body()).contains("error");
+        }
+        assertThat(send("POST", "/reservations/avec-contrat", "{}").statusCode()).isEqualTo(400);
+        for (String path : new String[]{"/clients/listall", "/reservations/listall", "/contrats/listall"}) {
+            assertThat(send("GET", path, null).body()).isEqualTo("[]");
+        }
+    }
+
+    private String[] ids(String json, String field) {
+        return Pattern.compile("\"" + field + "\"\\s*:\\s*(\\d+)")
+                .matcher(json).results().map(match -> match.group(1)).toArray(String[]::new);
+    }
+
     private String vehicleBody(String registration) {
         return "{\"immatriculation\":\"" + registration + "\",\"marque\":\"Renault\",\"modele\":\"Clio\","
                 + "\"categorie\":\"CITADINE\",\"tarifJournalier\":50.00,\"statut\":\"DISPONIBLE\"}";

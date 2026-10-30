@@ -2,7 +2,9 @@ package tn.esprit.spring.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.spring.domain.Client;
+import tn.esprit.spring.domain.Reservation;
 import tn.esprit.spring.repository.ClientRepository;
 
 import java.util.List;
@@ -49,5 +51,23 @@ public class ClientService implements IClient {
     public void supprimer(long id) {
         obtenirParId(id);
         clientRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public Client ajouterReservationClient(Client c) {
+        if (c == null || c.getReservations() == null || c.getReservations().isEmpty()
+                || c.getReservations().contains(null)) {
+            throw new IllegalArgumentException("Le client doit contenir au moins une réservation non nulle.");
+        }
+
+        c.setIdClient(null);
+        for (Reservation reservation : c.getReservations()) {
+            reservation.setIdReservation(null);
+            if (reservation.getContrat() != null) {
+                reservation.getContrat().setIdContrat(null);
+            }
+        }
+        return clientRepository.save(c);
     }
 }

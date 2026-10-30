@@ -34,6 +34,13 @@ public class ReservationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(reservationService.creer(reservation));
     }
 
+    @PostMapping("/avec-contrat")
+    @Operation(summary = "Créer une réservation avec son contrat",
+            description = "Crée une nouvelle réservation et son nouveau contrat dans une seule transaction.")
+    public ResponseEntity<Reservation> ajouterReservationContrat(@RequestBody Reservation r) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(reservationService.ajouterReservationContrat(r));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Chercher une réservation par identifiant")
     public Reservation obtenirParId(@PathVariable long id) {

@@ -56,9 +56,13 @@ public class EmployeService implements IEmployee {
     @Override
     @Transactional
     public Employe affecterAgenceEmploye(long idAgence, long idEmploye) {
-        Agence agence = agenceRepository.findById(idAgence)
-                .orElseThrow(() -> new EntityNotFoundException("Agence introuvable avec l'identifiant " + idAgence));
-        Employe employe = obtenirParId(idEmploye);
+        Employe employe = employeRepository.findById(idEmploye).orElse(null);
+        Agence agence = agenceRepository.findById(idAgence).orElse(null);
+
+        if (employe == null || agence == null) {
+            throw new EntityNotFoundException("Employé ou agence introuvable");
+        }
+
         employe.setAgence(agence);
         return employeRepository.save(employe);
     }

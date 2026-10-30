@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tn.esprit.spring.domain.Vehicule;
-import tn.esprit.spring.service.VehiculeService;
+import tn.esprit.spring.service.IVehicule;
 
 import java.util.List;
 
@@ -22,9 +22,9 @@ import java.util.List;
 @Tag(name = "Véhicules", description = "Gestion de la flotte de véhicules")
 public class VehiculeController {
 
-    private final VehiculeService vehiculeService;
+    private final IVehicule vehiculeService;
 
-    public VehiculeController(VehiculeService vehiculeService) {
+    public VehiculeController(IVehicule vehiculeService) {
         this.vehiculeService = vehiculeService;
     }
 

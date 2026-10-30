@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tn.esprit.spring.domain.Maintenance;
-import tn.esprit.spring.service.MaintenanceService;
+import tn.esprit.spring.service.IMaintenance;
 
 import java.util.List;
 
@@ -22,9 +22,9 @@ import java.util.List;
 @Tag(name = "Maintenances", description = "Gestion des opérations de maintenance")
 public class MaintenanceController {
 
-    private final MaintenanceService maintenanceService;
+    private final IMaintenance maintenanceService;
 
-    public MaintenanceController(MaintenanceService maintenanceService) {
+    public MaintenanceController(IMaintenance maintenanceService) {
         this.maintenanceService = maintenanceService;
     }
 

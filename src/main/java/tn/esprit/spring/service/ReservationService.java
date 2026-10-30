@@ -8,7 +8,7 @@ import tn.esprit.spring.repository.ReservationRepository;
 import java.util.List;
 
 @Service
-public class ReservationService {
+public class ReservationService implements IReservation {
 
     private final ReservationRepository reservationRepository;
 
@@ -16,20 +16,24 @@ public class ReservationService {
         this.reservationRepository = reservationRepository;
     }
 
+    @Override
     public Reservation creer(Reservation reservation) {
         reservation.setIdReservation(null);
         return reservationRepository.save(reservation);
     }
 
+    @Override
     public Reservation obtenirParId(long id) {
         return reservationRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Reservation introuvable avec l'identifiant " + id));
     }
 
+    @Override
     public List<Reservation> listerTous() {
         return reservationRepository.findAll();
     }
 
+    @Override
     public Reservation modifier(long id, Reservation reservation) {
         Reservation existante = obtenirParId(id);
         existante.setDateDebut(reservation.getDateDebut());
@@ -38,6 +42,7 @@ public class ReservationService {
         return reservationRepository.save(existante);
     }
 
+    @Override
     public void supprimer(long id) {
         obtenirParId(id);
         reservationRepository.deleteById(id);

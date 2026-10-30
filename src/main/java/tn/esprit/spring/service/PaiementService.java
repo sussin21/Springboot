@@ -8,7 +8,7 @@ import tn.esprit.spring.repository.PaiementRepository;
 import java.util.List;
 
 @Service
-public class PaiementService {
+public class PaiementService implements IPaiement {
 
     private final PaiementRepository paiementRepository;
 
@@ -16,20 +16,24 @@ public class PaiementService {
         this.paiementRepository = paiementRepository;
     }
 
+    @Override
     public Paiement creer(Paiement paiement) {
         paiement.setIdPaiement(null);
         return paiementRepository.save(paiement);
     }
 
+    @Override
     public Paiement obtenirParId(long id) {
         return paiementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Paiement introuvable avec l'identifiant " + id));
     }
 
+    @Override
     public List<Paiement> listerTous() {
         return paiementRepository.findAll();
     }
 
+    @Override
     public Paiement modifier(long id, Paiement paiement) {
         Paiement existant = obtenirParId(id);
         existant.setMontant(paiement.getMontant());
@@ -38,6 +42,7 @@ public class PaiementService {
         return paiementRepository.save(existant);
     }
 
+    @Override
     public void supprimer(long id) {
         obtenirParId(id);
         paiementRepository.deleteById(id);

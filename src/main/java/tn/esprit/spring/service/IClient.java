@@ -1,0 +1,18 @@
+package tn.esprit.spring.service;
+
+import tn.esprit.spring.domain.Client;
+
+import java.util.List;
+
+public interface IClient {
+
+    Client creer(Client client);
+
+    Client obtenirParId(long id);
+
+    List<Client> listerTous();
+
+    Client modifier(long id, Client client);
+
+    void supprimer(long id);
+}

@@ -8,7 +8,7 @@ import tn.esprit.spring.repository.ClientRepository;
 import java.util.List;
 
 @Service
-public class ClientService {
+public class ClientService implements IClient {
 
     private final ClientRepository clientRepository;
 
@@ -16,20 +16,24 @@ public class ClientService {
         this.clientRepository = clientRepository;
     }
 
+    @Override
     public Client creer(Client client) {
         client.setIdClient(null);
         return clientRepository.save(client);
     }
 
+    @Override
     public Client obtenirParId(long id) {
         return clientRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Client introuvable avec l'identifiant " + id));
     }
 
+    @Override
     public List<Client> listerTous() {
         return clientRepository.findAll();
     }
 
+    @Override
     public Client modifier(long id, Client client) {
         Client existant = obtenirParId(id);
         existant.setNom(client.getNom());
@@ -41,6 +45,7 @@ public class ClientService {
         return clientRepository.save(existant);
     }
 
+    @Override
     public void supprimer(long id) {
         obtenirParId(id);
         clientRepository.deleteById(id);

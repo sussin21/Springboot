@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tn.esprit.spring.domain.Reservation;
-import tn.esprit.spring.service.ReservationService;
+import tn.esprit.spring.service.IReservation;
 
 import java.util.List;
 
@@ -22,9 +22,9 @@ import java.util.List;
 @Tag(name = "Réservations", description = "Gestion des réservations de véhicules")
 public class ReservationController {
 
-    private final ReservationService reservationService;
+    private final IReservation reservationService;
 
-    public ReservationController(ReservationService reservationService) {
+    public ReservationController(IReservation reservationService) {
         this.reservationService = reservationService;
     }
 

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tn.esprit.spring.domain.Agence;
-import tn.esprit.spring.service.AgenceService;
+import tn.esprit.spring.service.IAgence;
 
 import java.util.List;
 
@@ -22,9 +22,9 @@ import java.util.List;
 @Tag(name = "Agences", description = "Gestion des agences de location")
 public class AgenceController {
 
-    private final AgenceService agenceService;
+    private final IAgence agenceService;
 
-    public AgenceController(AgenceService agenceService) {
+    public AgenceController(IAgence agenceService) {
         this.agenceService = agenceService;
     }
 

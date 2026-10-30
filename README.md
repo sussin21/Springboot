@@ -125,3 +125,8 @@ The method `Employe affecterAgenceEmploye(long idAgence, long idEmploye)` loads 
 4. GET `/employes/{idEmploye}` to see the saved `agence` object.
 
 For example, `PUT http://localhost:8081/employes/5/agence/2` assigns employee 5 to agency 2. The assignment endpoint appears in Swagger under Employés. The `agence` field is read-only in employee JSON requests; use the assignment endpoint to change it. Existing employees may remain unassigned. Delete assigned employees before deleting their agency.
+## Service interfaces
+
+Every domain service has an interface in `tn.esprit.spring.service`: `IAgence`, `IClient`, `IContrat`, `IEmployee`, `IEquipement`, `IMaintenance`, `IPaiement`, `IReservation`, and `IVehicule`. Each declares its CRUD methods; `IEmployee` also declares `affecterAgenceEmploye`.
+
+For example, `AgenceService implements IAgence` provides the method bodies, while `AgenceController` receives `IAgence` through its constructor. Spring injects the matching `@Service` implementation. The same structure is used for all nine resources. The repositories already are interfaces extending `JpaRepository`; entities remain concrete classes.

@@ -8,7 +8,7 @@ import tn.esprit.spring.repository.AgenceRepository;
 import java.util.List;
 
 @Service
-public class AgenceService {
+public class AgenceService implements IAgence {
 
     private final AgenceRepository agenceRepository;
 
@@ -16,20 +16,24 @@ public class AgenceService {
         this.agenceRepository = agenceRepository;
     }
 
+    @Override
     public Agence creer(Agence agence) {
         agence.setIdAgence(null);
         return agenceRepository.save(agence);
     }
 
+    @Override
     public Agence obtenirParId(long id) {
         return agenceRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Agence introuvable avec l'identifiant " + id));
     }
 
+    @Override
     public List<Agence> listerTous() {
         return agenceRepository.findAll();
     }
 
+    @Override
     public Agence modifier(long id, Agence agence) {
         Agence existante = obtenirParId(id);
         existante.setNom(agence.getNom());
@@ -39,6 +43,7 @@ public class AgenceService {
         return agenceRepository.save(existante);
     }
 
+    @Override
     public void supprimer(long id) {
         obtenirParId(id);
         agenceRepository.deleteById(id);

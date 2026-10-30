@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tn.esprit.spring.domain.Equipement;
-import tn.esprit.spring.service.EquipementService;
+import tn.esprit.spring.service.IEquipement;
 
 import java.util.List;
 
@@ -22,9 +22,9 @@ import java.util.List;
 @Tag(name = "Équipements", description = "Gestion des équipements")
 public class EquipementController {
 
-    private final EquipementService equipementService;
+    private final IEquipement equipementService;
 
-    public EquipementController(EquipementService equipementService) {
+    public EquipementController(IEquipement equipementService) {
         this.equipementService = equipementService;
     }
 

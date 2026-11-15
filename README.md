@@ -167,3 +167,11 @@ Reservation example:
 ```
 
 Read back the results with GET `/clients/{id}` (`reservations`) or GET `/reservations/{id}` (`contrat`). In phpMyAdmin, `reservation.id_client` stores the client link and `reservation.id_contrat` stores the unique contract link. Ordinary client/reservation edits preserve these links. Cascade PERSIST only creates records: deleting a client retains its reservations, and deleting a reservation retains its contract. For cleanup, delete the client, then its reservations, then the contracts.
+
+## Les 29 requêtes keyword sur les véhicules
+
+Les 29 recherches de l'énoncé sont implémentées dans `VehiculeRepository`, exposées dans `IVehicule`, déléguées par `VehiculeService` et accessibles via GET `/vehicules/recherche/...` dans Swagger. Voir [la correspondance numérotée et les exemples](docs/requetes-keyword.md).
+
+La relation facultative `Vehicule.agence` utilise `@ManyToOne` et la colonne `vehicule.id_agence`. Pour affecter un véhicule existant à une agence existante, utiliser PUT `/vehicules/{idV}/agence/{idAgence}` sans corps JSON. Les véhicules déjà présents peuvent rester sans agence.
+
+Vérification : `./mvnw verify` ou `.\mvnw.cmd verify`. La suite contient 41 cas : 29 recherches keyword via HTTP, 2 cas supplémentaires sur les recherches et l'affectation, et les 10 tests d'intégration existants. Les bases H2 de test sont isolées de MySQL.
